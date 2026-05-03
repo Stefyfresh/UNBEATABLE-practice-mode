@@ -25,9 +25,10 @@ Also, the config file supports comments, so if you want to quickly disable a par
 
 ## Mod Installation Instructions
 
+- Download the latest release of the mod from the releases page, and extract the dll file from insize the zip
 - Download BepInEx from [here](https://github.com/BepInEx/BepInEx/releases) and extract the BepInEx folder from the zip into the main UNBEATABLE game code folder (the one that contains UNBEATABLE.exe)
 - Run the game once and close it
-- Then put the mod DLL into the BepInEx\plugins folder
+- Put the mod DLL into the BepInEx\plugins folder
 
 The structure should then be:
 
