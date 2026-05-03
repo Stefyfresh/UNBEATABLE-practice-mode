@@ -3,6 +3,7 @@
 A mod to add a customizable practice mode to the hit rhythm game UNBEATABLE!
 
 ## Features
+
 - Allows you to skip to any desired part of any song, base game or custom
 - Will include a countdown timed with the current beat to count you in
 - Automatically sets character and camera position
@@ -12,6 +13,7 @@ A mod to add a customizable practice mode to the hit rhythm game UNBEATABLE!
 - Automatically disables score saving if a valid entry for a particular song is found
 
 ## Configuration
+
 The mod automatically creates `practice-mode-settings.txt` inside of your UNBEATABLE data directory once the mod is loaded.
 
 To add an entry to the settings, simply add the song name followed by a colon and then the exact millisecond number you would like the song to start at. Here is an example line:
