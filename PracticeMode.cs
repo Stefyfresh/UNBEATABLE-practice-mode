@@ -229,12 +229,15 @@ namespace PracticeMode
     [HarmonyPatch("Update")]
     internal class ControllerUpdatePatch
     {
+        // This actually sets the audio playback time
         static bool Prefix()
         {
             if (PracticeMode.hasUpdatedTime || !PracticeMode.practiceEnabled) return true;
 
             EventInstance instance = PracticeMode.instance;
             int startTime = PracticeMode.startTime;
+
+            // FMOD magic
             if (instance.isValid())
             {
                 if (instance.getChannelGroup(out ChannelGroup cg) == RESULT.OK)
@@ -251,6 +254,7 @@ namespace PracticeMode
                     }
                 }
             }
+
             return true;
         }
     }
