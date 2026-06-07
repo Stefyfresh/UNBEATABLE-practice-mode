@@ -30,7 +30,7 @@ If you were having issues with variable bitrate mp3 files, make sure to update t
 ## Mod Installation Instructions
 
 - Download the latest release of the mod from the releases page, and extract the DLL file from inside the zip
-- Download BepInEx from [here](https://github.com/BepInEx/BepInEx/releases) and extract the BepInEx folder from the zip into the main UNBEATABLE game code folder (the one that contains UNBEATABLE.exe)
+- Download BepInEx from [here](https://github.com/BepInEx/BepInEx/releases) and extract the BepInEx folder from the zip into the main UNBEATABLE game code folder (the one that contains UNBEATABLE.exe). You must extract ALL the files from that zip into the main UNBEATABLE folder (do NOT make a new folder!)
 - Run the game once and close it
 - Put the mod DLL into the BepInEx\plugins folder
 
@@ -38,17 +38,21 @@ The structure should then be:
 
 <pre>
 UNBEATABLE
-├───UNBEATABLE.exe
-├───UNBEATABLE_Data
-├───{some other folders and files}
-└───BepInEx
-    ├───cache
-    ├───config
-    ├───core
-    ├───patchers
-    └───plugins
-        ├───SomeMod.dll
-        └───SomeOtherMod.dll
+├─── UNBEATABLE.exe
+├─── UNBEATABLE_Data
+├─── {some other folders and files}
+├─── .doorstop_version
+├─── changelog.txt
+├─── doorstop_config.ini
+├─── winhttp.dll
+└─── BepInEx
+    ├─── cache
+    ├─── config
+    ├─── core
+    ├─── patchers
+    └─── plugins
+        ├─── SomeMod.dll
+        └─── SomeOtherMod.dll
 </pre>
 
 Once the mod is in the folder, restart the game and it should load.
