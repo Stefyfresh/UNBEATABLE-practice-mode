@@ -23,11 +23,18 @@ To add an entry to the settings, simply add the song name followed by a colon an
 The file is reloaded on every song load or restart, so you do not have to close the game to update it.
 Also, the config file supports comments, so if you want to quickly disable a particular song, you can just comment it out.
 
+## Important Notes
+
+If you are noticing synchronization issues, this is an important note to read.
+
+This mod currently has issues with certain variable bitrate mp3 files, as the game's audio engine FMOD will not load the audio at the correct spot and thus the audio will be desynced from the chart. If this happens, try re-encoding your song to wav (or non-variable-bitrate mp3).
+
 ## Mod Installation Instructions
 
+- Download the latest release of the mod from the releases page, and extract the DLL file from inside the zip
 - Download BepInEx from [here](https://github.com/BepInEx/BepInEx/releases) and extract the BepInEx folder from the zip into the main UNBEATABLE game code folder (the one that contains UNBEATABLE.exe)
 - Run the game once and close it
-- Then put the mod DLL into the BepInEx\plugins folder
+- Put the mod DLL into the BepInEx\plugins folder
 
 The structure should then be:
 
