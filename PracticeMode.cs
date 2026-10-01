@@ -262,6 +262,24 @@ namespace PracticeMode
 
 
 
+    [HarmonyPatch(typeof(HighScoreScreenArcade))]
+    [HarmonyPatch("OnScoreScreenUpdated")]
+    internal class OnScoreScreenUpdatedPatch
+    {
+        static bool Prefix(ref HighScoreScreenArcade __instance)
+        {
+            if (!PracticeMode.practiceEnabled) return true;
+
+            // Show practice mode as a modifier
+            GameObject practiceModifierGO = UnityEngine.Object.Instantiate(__instance.modifierPrefab, __instance.modifierPrefab.transform.parent);
+            practiceModifierGO.SetActive(true);
+            practiceModifierGO.GetComponentInChildren<TextMeshProUGUI>().text = "<cspace=0.2em>>" + "Practice Mode";
+            return true;
+        }
+    }
+
+
+
     [HarmonyPatch(typeof(HighScoreList))]
     [HarmonyPatch("IsScoreSaveable")]
     internal class DisableScoreSaving
