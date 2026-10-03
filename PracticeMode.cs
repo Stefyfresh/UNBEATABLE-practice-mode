@@ -11,6 +11,10 @@ using System.Text.RegularExpressions;
 using FMOD.Studio;
 using FMOD;
 using System.Reflection.Emit;
+using TMPro;
+using System.Collections;
+using FMODUnity;
+using BepInEx.Configuration;
 
 namespace PracticeMode
 {
@@ -18,34 +22,63 @@ namespace PracticeMode
     [BepInProcess("UNBEATABLE.exe")]
     public class PracticeMode : BaseUnityPlugin
     {
-        public const string PLUGIN_GUID = "net.stefyfresh.PracticeMode";
-        public const string PLUGIN_NAME = "Stefyfresh Practice Mode";
-        public const string PLUGIN_VERSION = "1.2.0";
+        public const string PLUGIN_GUID = "com.stefyfresh.PracticeMode";
+        public const string PLUGIN_NAME = "Practice Mode";
+        public const string PLUGIN_VERSION = "1.3.0";
         internal static new ManualLogSource Logger;
-        public static bool practiceEnabled;
+        public static readonly string settingsFilePath = "practice-mode-settings.txt";
+
+        // Data
         public static int startTime;
-        public static Dictionary<string, int> songOverrideInfos = new Dictionary<string, int>();
+        public static Dictionary<string, int> songOverrideInfos = [];
         public static EventInstance instance;
+
+        // States
+        public static bool practiceEnabled;
         public static bool hasUpdatedTime;
+        // public static bool hasCorrectedTime;
+        // public static bool isReady;
+
+        // Config
+        public static ConfigEntry<bool> modEnabled;
+        public static ConfigEntry<bool> offsetFixEnabled;
+        public static bool doLogging = false;
+
 
         private void Awake()
         {
             Logger = base.Logger;
             Logger.LogInfo($"Plugin {PLUGIN_GUID} is loaded!");
+
+            modEnabled = Config.Bind(
+                "General",
+                "EnablePractice",
+                true,
+                "Enables the ability to change where to start in a song using the information in the practice settings file."
+            );
+
+            offsetFixEnabled = Config.Bind(
+                "General",
+                "EnableOffsetFix",
+                true,
+                "Enables a fix for offset that can cause offset issues during practice mode.\nApplies to all songs regardless of practice mode, but mostly affects practice sessions."
+            );
+
             var harmony = new Harmony(PLUGIN_GUID);
             harmony.PatchAll();
+
             ReadSongOverrides();
         }
 
         public static void ReadSongOverrides()
         {
             songOverrideInfos.Clear();
-            if (!File.Exists(Application.persistentDataPath + "/practice-mode-settings.txt"))
+            if (!File.Exists(Path.Combine(Application.persistentDataPath, settingsFilePath)))
             {
-                File.WriteAllText(Application.persistentDataPath + "/practice-mode-settings.txt", $"// Practice Mode Settings Format:{Environment.NewLine}// Song Name:Timestamp in ms{Environment.NewLine}// The names are case insensitive, but they must exactly match the song title.{Environment.NewLine}// All lines starting with // are ignored.{Environment.NewLine}{Environment.NewLine}//Example Song Title:12345{Environment.NewLine}");
+                File.WriteAllText(Path.Combine(Application.persistentDataPath, settingsFilePath), $"// Practice Mode Settings Format:{Environment.NewLine}// Song Name:Timestamp in ms{Environment.NewLine}// The names are case insensitive, but they must exactly match the song title.{Environment.NewLine}// All lines starting with // are ignored.{Environment.NewLine}{Environment.NewLine}//Example Song Title:12345{Environment.NewLine}");
             }
 
-            string[] lines = Regex.Split(File.ReadAllText(Application.persistentDataPath + "/practice-mode-settings.txt"), Environment.NewLine);
+            string[] lines = Regex.Split(File.ReadAllText(Path.Combine(Application.persistentDataPath, settingsFilePath)), Environment.NewLine);
 
             bool saveChanges = false;
             for (int i = 0; i < lines.Length; i++)
@@ -70,29 +103,34 @@ namespace PracticeMode
                 }
             }
 
-            if (saveChanges) File.WriteAllLines(Application.persistentDataPath + "/practice-mode-settings.txt", lines);
+            if (saveChanges) File.WriteAllLines(Path.Combine(Application.persistentDataPath, settingsFilePath), lines);
         }
     }
 
 
 
     [HarmonyPatch(typeof(RhythmController))]
-    [HarmonyPatch("InitializeAndPlay")]
+    [HarmonyPatch(nameof(RhythmController.InitializeAndPlay))]
     internal class ControllerInitializePatch
     {
         static void Postfix(ref RhythmController __instance)
         {
+            // Reset state
             PracticeMode.practiceEnabled = false;
             PracticeMode.hasUpdatedTime = false;
+            // AudioSettingController.Init(__instance);
+
+            // Exit if not enabled
+            if (!PracticeMode.modEnabled.Value) return;
+
             PracticeMode.ReadSongOverrides();
 
-            int startTime;
-            if (PracticeMode.songOverrideInfos.TryGetValue(__instance.beatmap.metadata.title.ToUpper(), out startTime))
+            // Check current song
+            if (PracticeMode.songOverrideInfos.TryGetValue(__instance.beatmap.metadata.title.ToUpper(), out int startTime))
             {
                 PracticeMode.startTime = startTime;
                 PracticeMode.practiceEnabled = true;
             }
-
 
             if (PracticeMode.practiceEnabled)
             {
@@ -111,7 +149,7 @@ namespace PracticeMode
                 // Load timing points
                 TimingPointInfo countdownTiming = null;
                 List<TimingPointInfo> timings = new List<TimingPointInfo>(__instance.beatmap.timingPoints);
-                timings.RemoveAll((TimingPointInfo t) => !t.uninherited);
+                timings.RemoveAll(t => !t.uninherited);
 
                 int index = 0;
 
@@ -135,8 +173,9 @@ namespace PracticeMode
 
 
                 // Get FMOD instance
-                EventInstance instance = (EventInstance)Traverse.Create(__instance.songTracker).Field("instance").GetValue();
+                EventInstance instance = __instance.songTracker.instance;
                 PracticeMode.instance = instance;
+                instance.setPaused(true);
                 // instance.setTimelinePosition(seekTime);
 
 
@@ -176,12 +215,11 @@ namespace PracticeMode
 
                 // Update the score so it actually means something useful
                 List<NoteInfo> updatedNotes = __instance.notes.ToList();
-                Traverse traverse = Traverse.Create(__instance.score);
-                traverse.Field("totalNoteCount").SetValue(GetSignificantNoteCount(updatedNotes));
-                traverse.Field("totalDodgesCount").SetValue(updatedNotes.Count(n => n.type == NoteType.Dodge));
-                traverse.Field("scoreWeight").SetValue((float)RhythmConsts.MaxScoreWeight / __instance.score.GetMaxPossibleScore());
+                __instance.score.totalNoteCount = GetSignificantNoteCount(updatedNotes);
+                __instance.score.totalDodgesCount = updatedNotes.Count(n => n.type == NoteType.Dodge);
+                __instance.score.scoreWeight = RhythmConsts.MaxScoreWeight / __instance.score.GetMaxPossibleScore();
             }
-            return;
+            // AudioSettingController.Init(__instance);
         }
 
         private static int GetSongDuration(RhythmController rhythm)
@@ -227,43 +265,34 @@ namespace PracticeMode
 
 
     [HarmonyPatch(typeof(RhythmController))]
-    [HarmonyPatch("Update")]
+    [HarmonyPatch(nameof(RhythmController.FixedUpdate))]
     internal class ControllerUpdatePatch
     {
         // This actually sets the audio playback time
-        static bool Prefix()
+        static bool Prefix(ref RhythmController __instance)
         {
-            if (PracticeMode.hasUpdatedTime || !PracticeMode.practiceEnabled) return true;
-
-            EventInstance instance = PracticeMode.instance;
-            int startTime = PracticeMode.startTime;
-
-            // FMOD magic
-            if (instance.isValid())
-            {
-                if (instance.getChannelGroup(out ChannelGroup cg) == RESULT.OK)
-                {
-                    cg.getNumGroups(out _);
-                    cg.getGroup(0, out ChannelGroup subGroup);
-                    subGroup.getNumChannels(out int numChan);
-                    if (numChan > 0)
-                    {
-                        subGroup.getChannel(0, out Channel chan);
-                        chan.setPosition((uint)startTime, TIMEUNIT.MS);
-                        instance.setTimelinePosition(startTime);
-                        PracticeMode.hasUpdatedTime = true;
-                    }
-                }
-            }
-
+            if (PracticeMode.modEnabled.Value) AudioSettingController.FixedUpdate(__instance);
             return true;
         }
     }
 
 
 
+    [HarmonyPatch(typeof(RhythmTracker))]
+    [HarmonyPatch(nameof(RhythmTracker.AddCountdown))]
+    internal class AddCountdownPatch
+    {
+        // This actually sets the audio playback time
+        static void Postfix(ref RhythmTracker __instance)
+        {
+            AudioSettingController.songTrackerPosition = __instance.currentPosition;
+        }
+    }
+
+
+
     [HarmonyPatch(typeof(HighScoreScreenArcade))]
-    [HarmonyPatch("OnScoreScreenUpdated")]
+    [HarmonyPatch(nameof(HighScoreScreenArcade.OnScoreScreenUpdated))]
     internal class OnScoreScreenUpdatedPatch
     {
         static bool Prefix(ref HighScoreScreenArcade __instance)
@@ -281,7 +310,7 @@ namespace PracticeMode
 
 
     [HarmonyPatch(typeof(HighScoreList))]
-    [HarmonyPatch("IsScoreSaveable")]
+    [HarmonyPatch(nameof(HighScoreList.IsScoreSaveable))]
     internal class DisableScoreSaving
     {
         static bool Prefix(ref bool __result)
@@ -298,7 +327,7 @@ namespace PracticeMode
 
 
     [HarmonyPatch(typeof(RhythmTracker))]
-    [HarmonyPatch("HandleCreateProgrammerSound")]
+    [HarmonyPatch(nameof(RhythmTracker.HandleCreateProgrammerSound))]
     internal class SoundCreationTranspiler
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
@@ -309,10 +338,15 @@ namespace PracticeMode
             foreach (var instruction in instructions)
             {
                 // transpiler nonsense
-                if (instruction.opcode == OpCodes.Ldc_I4 && (int)instruction.operand == 66050) // 66050 = MODE.LOOP_NORMAL | MODE.CREATECOMPRESSEDSAMPLE | MODE.NONBLOCKING
+                if (instruction.opcode == OpCodes.Ldc_I4 && instruction.operand is int num && num == 66050) // 66050 = MODE.LOOP_NORMAL | MODE.CREATECOMPRESSEDSAMPLE | MODE.NONBLOCKING
                 {
                     found = true;
                     yield return new CodeInstruction(OpCodes.Ldc_I4, 82434); // 82434 = MODE.LOOP_NORMAL | MODE.CREATECOMPRESSEDSAMPLE | MODE.NONBLOCKING | MODE.ACCURATETIME
+                }
+                else if (instruction.opcode == OpCodes.Ldc_I4 && instruction.operand is int num2 && num2 == 65794) // 65794 = MODE.LOOP_NORMAL | MODE.CREATESAMPLE | MODE.NONBLOCKING
+                {
+                    found = true;
+                    yield return new CodeInstruction(OpCodes.Ldc_I4, 82178); // 82178 = MODE.LOOP_NORMAL | MODE.CREATESAMPLE | MODE.NONBLOCKING | MODE.ACCURATETIME
                 }
                 else
                 {
@@ -334,7 +368,7 @@ namespace PracticeMode
 
 
     [HarmonyPatch(typeof(RhythmTracker))]
-    [HarmonyPatch("GetSongDuration")]
+    [HarmonyPatch(nameof(RhythmTracker.GetSongDuration))]
     internal class GetSongDurationTranspiler
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
@@ -365,6 +399,95 @@ namespace PracticeMode
             {
                 PracticeMode.Logger.LogError("Could not find sound mode info for duration to patch!");
             }
+        }
+    }
+
+
+
+    [HarmonyPatch(typeof(RhythmTracker))]
+    [HarmonyPatch(nameof(RhythmTracker.Started), MethodType.Getter)]
+    internal class RhythmTrackerStartedPatch
+    {
+        static bool Prefix(ref RhythmTracker __instance, ref bool __result)
+        {
+            if (!PracticeMode.offsetFixEnabled.Value) return true;
+
+            __result = __instance.currentPosition >= 0f && __instance.GetSampleLoadState() == LOADING_STATE.LOADED && !__instance.isPreload && !__instance.isLoadingSamples;
+            // if (PracticeMode.practiceEnabled) __result = PracticeMode.isReady;
+            return false;
+        }
+    }
+
+
+
+    [HarmonyPatch(typeof(RhythmTracker))]
+    [HarmonyPatch(nameof(RhythmTracker.FixedUpdate))]
+    [HarmonyPriority(Priority.First)]
+    internal class BetterOffset
+    {
+        static bool Prefix(ref RhythmTracker __instance)
+        {
+            if (!PracticeMode.offsetFixEnabled.Value) return true;
+
+
+            // normal code
+            if (__instance.pausePosition != -1f) __instance.pitch = 1f - Mathf.Min(1f, (__instance.currentPosition - __instance.pausePosition) / __instance.pauseLength);
+            else __instance.pitch = 1f;
+
+
+
+            // Get paused state
+            __instance.instance.getPaused(out bool paused);
+
+            // Get actual song position
+            float currentTimelinePos = AudioSettingController.GetCustomPosition(__instance);
+
+            // Get corrected deltaTime
+            float correctionFactor = (Time.timeScale == 0) ? 0 : __instance.TimeScale / Time.timeScale;
+
+            // Update position
+            // Time.unscaledDeltaTime * __instance.TimeScale instead of Time.deltaTime to fix the end slowdown
+            AudioSettingController.songTrackerPosition += 1000 * Time.deltaTime * correctionFactor * __instance.pitch;
+
+            // Update position directly when error is high
+            if (currentTimelinePos > 0 && Math.Abs(currentTimelinePos - AudioSettingController.songTrackerPosition) >= 125 && !paused)
+            {
+                AudioSettingController.songTrackerPosition = currentTimelinePos;
+            }
+
+            if (currentTimelinePos > 0 && !paused)
+            {
+                AudioSettingController.songTrackerPosition = Mathf.SmoothDamp(AudioSettingController.songTrackerPosition, currentTimelinePos, ref __instance.currentCorrectionVelocity, 0.30f);
+            }
+
+            // Perform rounding
+            __instance.currentPosition = Mathf.RoundToInt(AudioSettingController.songTrackerPosition);
+
+
+
+            // normal code
+            if (__instance.pausePosition != -1f) __instance.currentPosition = Mathf.Min(__instance.currentPosition, __instance.pausePosition + __instance.pauseLength);
+            if (__instance.countdown != null && __instance.countdownBeat >= 0 && Mathf.CeilToInt((__instance.countdown.length - __instance.CountdownPosition) / __instance.countdown.beatLength) == __instance.countdownBeat)
+            {
+                __instance.countdownBeat--;
+                switch (__instance.countdownBeat)
+                {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 5:
+                    case 7:
+                        RuntimeManager.PlayOneShot(__instance.tickEvent, default(Vector3));
+                        break;
+                    case 4:
+                    case 6:
+                        break;
+                    default:
+                        return false;
+                }
+            }
+            return false;
         }
     }
 }
