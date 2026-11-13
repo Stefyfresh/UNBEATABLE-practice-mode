@@ -2,6 +2,10 @@
 
 A mod to add a customizable practice mode to the hit rhythm game UNBEATABLE!
 
+<br>
+
+Disclaimer: This is not affiliated with or endorsed by D-CELL GAMES.
+
 ## Features
 
 - Allows you to skip to any desired part of any song, base game or custom.
@@ -38,30 +42,10 @@ NOTE: You may experience a change in your perferred offset when you enable this,
 
 ## Mod Installation Instructions
 
-- Download the latest release of the mod from the releases page, and extract the DLL file from inside the zip
-- Download BepInEx from [here](https://github.com/BepInEx/BepInEx/releases) and extract the BepInEx folder from the zip into the main UNBEATABLE game code folder (the one that contains UNBEATABLE.exe). You must extract ALL the files from that zip into the main UNBEATABLE folder (do NOT make a new folder!)
-- Run the game once and close it
-- Put the mod DLL into the BepInEx\plugins folder
+For installation instructions, refer to my mod installation guide here:
 
-The structure should then be:
+https://gist.github.com/Stefyfresh/1140bf18c5f3895bd807258c16483887
 
-<pre>
-UNBEATABLE
-├─── UNBEATABLE.exe
-├─── UNBEATABLE_Data
-├─── {some other folders and files}
-├─── .doorstop_version
-├─── changelog.txt
-├─── doorstop_config.ini
-├─── winhttp.dll
-└─── BepInEx
-    ├─── cache
-    ├─── config
-    ├─── core
-    ├─── patchers
-    └─── plugins
-        ├─── SomeMod.dll
-        └─── SomeOtherMod.dll
-</pre>
+---
 
-Once the mod is in the folder, restart the game and it should load.
+###### All code for Practice Mode was written by me, by hand.
