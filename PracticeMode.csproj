@@ -3,7 +3,9 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>PracticeMode</AssemblyName>
+    <RootNamespace>PracticeMode</RootNamespace>
     <Version>1.3.1</Version>
+    <Description>https://github.com/Stefyfresh/UNBEATABLE-practice-mode</Description>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
@@ -11,7 +13,6 @@
       https://nuget.bepinex.dev/v3/index.json;
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
-    <RootNamespace>PracticeMode</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
