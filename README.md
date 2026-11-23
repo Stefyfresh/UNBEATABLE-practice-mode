@@ -32,11 +32,13 @@ Also, the config file supports comments, so if you want to quickly disable a par
 As of v1.3.1, new BepInEx configuration entries have been added:
 
 ### EnablePractice
-A global toggle for the practice feature of practice mode. 
+
+A global toggle for the practice feature of practice mode.
 This makes it possible to disable all practice without commenting out every line in the practice options file.
 
-### EnableOffsetFix 
-Enables a fix for offset that can cause issues when using practice mode. This fix will force the game's internal timeline to more accurately follow the audio position. The original implementation consistently gets 15-30 ms offset whenever practice mode is enabled and can also randomly change or drift upon restarts or pausing even when NOT using practice mode. This fix solves all those problems and makes offset repeatability across runs and practice mode enabled/disabled much better. 
+### EnableOffsetFix
+
+Enables a fix for offset that can cause issues when using practice mode. This fix will force the game's internal timeline to more accurately follow the audio position. The original implementation consistently gets 15-30 ms offset whenever practice mode is enabled and can also randomly change or drift upon restarts or pausing even when NOT using practice mode. This fix solves all those problems and makes offset repeatability across runs and practice mode enabled/disabled much better.
 
 NOTE: You may experience a change in your perferred offset when you enable this, however I would highly advise against disabling this just to put your preferred offset back to its original value as it is a very useful and globally relevant feature.
 
@@ -44,7 +46,7 @@ NOTE: You may experience a change in your perferred offset when you enable this,
 
 For installation instructions, refer to my mod installation guide here:
 
-https://gist.github.com/Stefyfresh/1140bf18c5f3895bd807258c16483887
+<https://gist.github.com/Stefyfresh/1140bf18c5f3895bd807258c16483887>
 
 ---
 
