@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
+using FMOD;
 using FMOD.Studio;
 using FMODUnity;
 using HarmonyLib;
@@ -23,15 +24,15 @@ namespace PracticeMode
             foreach (var instruction in instructions)
             {
                 // transpiler nonsense
-                if (instruction.opcode == OpCodes.Ldc_I4 && instruction.operand is int num && num == 66050) // 66050 = MODE.LOOP_NORMAL | MODE.CREATECOMPRESSEDSAMPLE | MODE.NONBLOCKING
+                if (instruction.opcode == OpCodes.Ldc_I4 && instruction.operand is int num && num == (int)(MODE.LOOP_NORMAL | MODE.CREATECOMPRESSEDSAMPLE | MODE.NONBLOCKING))
                 {
                     found = true;
-                    yield return new CodeInstruction(OpCodes.Ldc_I4, 82434); // 82434 = MODE.LOOP_NORMAL | MODE.CREATECOMPRESSEDSAMPLE | MODE.NONBLOCKING | MODE.ACCURATETIME
+                    yield return new CodeInstruction(OpCodes.Ldc_I4, (int)(MODE.LOOP_NORMAL | MODE.CREATECOMPRESSEDSAMPLE | MODE.NONBLOCKING | MODE.ACCURATETIME));
                 }
-                else if (instruction.opcode == OpCodes.Ldc_I4 && instruction.operand is int num2 && num2 == 65794) // 65794 = MODE.LOOP_NORMAL | MODE.CREATESAMPLE | MODE.NONBLOCKING
+                else if (instruction.opcode == OpCodes.Ldc_I4 && instruction.operand is int num2 && num2 == (int)(MODE.LOOP_NORMAL | MODE.CREATESAMPLE | MODE.NONBLOCKING))
                 {
                     found = true;
-                    yield return new CodeInstruction(OpCodes.Ldc_I4, 82178); // 82178 = MODE.LOOP_NORMAL | MODE.CREATESAMPLE | MODE.NONBLOCKING | MODE.ACCURATETIME
+                    yield return new CodeInstruction(OpCodes.Ldc_I4, (int)(MODE.LOOP_NORMAL | MODE.CREATESAMPLE | MODE.NONBLOCKING | MODE.ACCURATETIME));
                 }
                 else
                 {
@@ -64,10 +65,10 @@ namespace PracticeMode
             foreach (var instruction in instructions)
             {
                 // transpiler nonsense
-                if (instruction.opcode == OpCodes.Ldc_I4 && instruction.operand is int num && num == 8448) // 8448 = MODE.CREATESAMPLE | MODE.OPENONLY
+                if (instruction.opcode == OpCodes.Ldc_I4 && instruction.operand is int num && num == (int)(MODE.CREATESAMPLE | MODE.OPENONLY))
                 {
                     found = true;
-                    instruction.operand = 24832; // 24832 = MODE.CREATESAMPLE | MODE.OPENONLY | MODE.ACCURATETIME
+                    instruction.operand = (int)(MODE.CREATECOMPRESSEDSAMPLE | MODE.OPENONLY | MODE.ACCURATETIME);
                     yield return instruction;
                 }
                 else

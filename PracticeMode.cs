@@ -24,7 +24,7 @@ namespace PracticeMode
     {
         public const string PLUGIN_GUID = "com.stefyfresh.PracticeMode";
         public const string PLUGIN_NAME = "Practice Mode";
-        public const string PLUGIN_VERSION = "1.3.1";
+        public const string PLUGIN_VERSION = "1.3.2";
         internal static new ManualLogSource Logger;
         public static readonly string settingsFilePath = "practice-mode-settings.txt";
 
@@ -133,7 +133,8 @@ namespace PracticeMode
             if (PracticeMode.practiceEnabled)
             {
                 // Check if audio is valid
-                if (GetSongDuration(__instance) == -1)
+                int duration = GetSongDuration(__instance);
+                if (duration == -1 || duration == 0)
                 {
                     PracticeMode.practiceEnabled = false;
                     return;
@@ -174,7 +175,6 @@ namespace PracticeMode
                 EventInstance instance = __instance.songTracker.instance;
                 PracticeMode.instance = instance;
                 instance.setPaused(true);
-                // instance.setTimelinePosition(seekTime);
 
 
                 // Countdown
@@ -225,24 +225,28 @@ namespace PracticeMode
             uint songLengthFMOD;
             if (rhythm.parser.loadFromJeffBezos && JeffBezosController.rhythmProgression is ArcadeProgression arcadeProgression)
             {
-                if (arcadeProgression.isCustomChart)
-                {
-                    // Custom song
-                    songLengthFMOD = RhythmTracker.GetSongDuration(PlaySource.FromFile, arcadeProgression.customAudioPath);
-                }
-                else
-                {
-                    songLengthFMOD = RhythmTracker.GetSongDuration(PlaySource.FromTable, arcadeProgression.GetSongName());
-                }
+                if (arcadeProgression.isCustomChart) songLengthFMOD = GetCustomSongDurationFast(arcadeProgression.customAudioPath);
+                else songLengthFMOD = RhythmTracker.GetSongDuration(PlaySource.FromTable, arcadeProgression.GetSongName());
 
-                if (songLengthFMOD > 0)
-                {
-                    // Song was properly loaded, use length from FMOD
-                    return (int)songLengthFMOD;
-                }
+                if (songLengthFMOD > 0) return (int)songLengthFMOD;
             }
             return -1;
         }
+
+
+        private static uint GetCustomSongDurationFast(string key)
+        {
+            if (RuntimeManager.CoreSystem.createSound(key, MODE.CREATECOMPRESSEDSAMPLE | MODE.OPENONLY, out var sound) != RESULT.OK) return 0;
+            if (sound.getLength(out var length, TIMEUNIT.MS) != RESULT.OK)
+            {
+                sound.release();
+                return 0;
+            }
+
+            sound.release();
+            return length;
+        }
+
 
         private static int GetSignificantNoteCount(List<NoteInfo> noteInfos)
         {
@@ -250,10 +254,7 @@ namespace PracticeMode
             NoteInfo prevNoteInfo = null;
             foreach (NoteInfo checkNoteInfo in noteInfos)
             {
-                if (checkNoteInfo.type != NoteType.Freestyle || prevNoteInfo == null || prevNoteInfo.type != NoteType.Freestyle || checkNoteInfo.side != prevNoteInfo.side)
-                {
-                    count++;
-                }
+                if (checkNoteInfo.type != NoteType.Freestyle || prevNoteInfo == null || prevNoteInfo.type != NoteType.Freestyle || checkNoteInfo.side != prevNoteInfo.side) count++;
                 prevNoteInfo = checkNoteInfo;
             }
             return count;
